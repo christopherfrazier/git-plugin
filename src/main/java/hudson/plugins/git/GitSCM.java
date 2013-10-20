@@ -100,6 +100,7 @@ public class GitSCM extends SCM implements Serializable {
     private boolean remotePoll;
     private boolean ignoreNotifyCommit;
     private boolean useShallowClone;
+    private boolean abortIfNoNewRevs;
 
     /**
      * @deprecated
@@ -152,7 +153,7 @@ public class GitSCM extends SCM implements Serializable {
                 false, Collections.<SubmoduleConfig>emptyList(), false,
                 false, new DefaultBuildChooser(), null, null, false, null,
                 null,
-                null, null, null, false, false, false, false, null, null, false, null, false, false);
+                null, null, null, false, false, false, false, null, null, false, null, false, false, false);
     }
 
     @DataBoundConstructor
@@ -182,7 +183,8 @@ public class GitSCM extends SCM implements Serializable {
             boolean skipTag,
             String includedRegions,
             boolean ignoreNotifyCommit,
-            boolean useShallowClone) {
+            boolean useShallowClone,
+            boolean abortIfNoNewRevs) {
 
         this.scmName = scmName;
 
@@ -231,6 +233,7 @@ public class GitSCM extends SCM implements Serializable {
         this.pruneBranches = pruneBranches;
         this.ignoreNotifyCommit = ignoreNotifyCommit;
         this.useShallowClone = useShallowClone;
+        this.abortIfNoNewRevs = abortIfNoNewRevs;
         if (remotePoll
             && (branches.size() != 1
             || branches.get(0).getName().contains("*")
@@ -505,6 +508,10 @@ public class GitSCM extends SCM implements Serializable {
     
     public boolean getUseShallowClone() {
     	return useShallowClone;
+    }
+
+    public boolean getAbortIfNoNewRevs() {
+        return abortIfNoNewRevs;
     }
 
     public BuildChooser getBuildChooser() {
@@ -1059,6 +1066,24 @@ public class GitSCM extends SCM implements Serializable {
 
             }
         });
+
+        // Check if we're trying to build the last built revision
+        // Build choosers default to this when they don't
+        // find any candidate revisions to build
+        if (abortIfNoNewRevs && candidates.size() == 1) {
+            Revision rev = candidates.iterator().next();
+            Revision last = buildData.getLastBuiltRevision();
+
+            // This is a little bit of a hack.
+            // The git client Revision class doesn't implement
+            // equals(), but the string representations contain
+            // all the info we need to compare them
+            // (branches and SHA)
+            if (rev.toString().equals(last.toString())) {
+                logger.println("No new revisions found.  Aborting job.");
+                throw new InterruptedException("No new revisions found");
+            }
+        }
 
         if (candidates.size() == 0) {
             logger.println("No candidate revisions");
