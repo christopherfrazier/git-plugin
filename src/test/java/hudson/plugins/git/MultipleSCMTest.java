@@ -20,27 +20,27 @@ import org.jvnet.hudson.test.CaptureEnvironmentBuilder;
 
 /**
  * Verifies the git plugin interacts correctly with the multiple SCMs plugin.
- * 
+ *
  * @author corey@ooyala.com
  */
 public class MultipleSCMTest extends HudsonTestCase {
-	protected TaskListener listener;
-	
-	protected TestGitRepo repo0;
-	protected TestGitRepo repo1;
-	
-	protected void setUp() throws Exception {
-		super.setUp();
-		
-		listener = StreamTaskListener.fromStderr();
-		
-		repo0 = new TestGitRepo("repo0", this, listener);
-		repo1 = new TestGitRepo("repo1", this, listener);
-	}
-	
-	public void testBasic() throws Exception
-	{
-		FreeStyleProject project = setupBasicProject("master");
+    protected TaskListener listener;
+
+    protected TestGitRepo repo0;
+    protected TestGitRepo repo1;
+
+    protected void setUp() throws Exception {
+        super.setUp();
+
+        listener = StreamTaskListener.fromStderr();
+
+        repo0 = new TestGitRepo("repo0", this, listener);
+        repo1 = new TestGitRepo("repo1", this, listener);
+    }
+
+    public void testBasic() throws Exception
+    {
+        FreeStyleProject project = setupBasicProject("master");
 
         repo0.commit("repo0-init", repo0.johnDoe, "repo0 initial commit");
 
@@ -49,10 +49,10 @@ public class MultipleSCMTest extends HudsonTestCase {
 
         repo1.commit("repo1-init", repo1.janeDoe, "repo1 initial commit");
 
-		build(project, Result.SUCCESS);
-		
-		assertFalse("scm polling should not detect any more changes after build", 
-				project.pollSCMChanges(listener));
+        build(project, Result.SUCCESS);
+
+        assertFalse("scm polling should not detect any more changes after build",
+                project.pollSCMChanges(listener));
 
         repo1.commit("repo1-1", repo1.johnDoe, "repo1 commit 1");
 
@@ -67,85 +67,85 @@ public class MultipleSCMTest extends HudsonTestCase {
 
         assertFalse("scm polling should not detect any more changes after build",
                 project.pollSCMChanges(listener));
-	}
-	
-	private FreeStyleProject setupBasicProject(String name) throws IOException
-	{
-		FreeStyleProject project = createFreeStyleProject(name);
-		
-		List<BranchSpec> branch = Collections.singletonList(new BranchSpec("master"));
-		
-		SCM repo0Scm = new GitSCM("repo0",
-				  repo0.remoteConfigs(),
-				  branch,
-				  null,
-				  false,
-				  Collections.<SubmoduleConfig>emptyList(),
-				  false,
-				  false,
-				  new DefaultBuildChooser(),
-				  null,
-				  null,
-				  false,
-				  "repo0",
-				  null,
-				  null,
-				  null,
-				  null,
-				  false,
-				  false,
-				  false,
-				  false,
-				  null,
-				  null,
-				  false,
-				  null,
-				  false, false, false);
+    }
 
-		SCM repo1Scm = new GitSCM("repo1",
-				  repo1.remoteConfigs(),
-				  branch,
-				  null,
-				  false,
-				  Collections.<SubmoduleConfig>emptyList(),
-				  false,
-				  false,
-				  new DefaultBuildChooser(),
-				  null,
-				  null,
-				  false,
-				  "repo1",
-				  null,
-				  null,
-				  null,
-				  null,
-				  false,
-				  false,
-				  false,
-				  false,
-				  null,
-				  null,
-				  false,
-				  null,
-				  false, false, false);
-		
-		List<SCM> testScms = new ArrayList<SCM>();
-		testScms.add(repo0Scm);
-		testScms.add(repo1Scm);
-		
-		MultiSCM scm = new MultiSCM(testScms);
-		
-		project.setScm(scm);
-		project.getBuildersList().add(new CaptureEnvironmentBuilder());
-		return project;
-	}
-	
-	private FreeStyleBuild build(final FreeStyleProject project, 
-			final Result expectedResult) throws Exception {
-		final FreeStyleBuild build = project.scheduleBuild2(0, new Cause.UserCause()).get();
-		if(expectedResult != null) {
-			assertBuildStatus(expectedResult, build);
-		}
-		return build;
-	}
+    private FreeStyleProject setupBasicProject(String name) throws IOException
+    {
+        FreeStyleProject project = createFreeStyleProject(name);
+
+        List<BranchSpec> branch = Collections.singletonList(new BranchSpec("master"));
+
+        SCM repo0Scm = new GitSCM("repo0",
+                  repo0.remoteConfigs(),
+                  branch,
+                  null,
+                  false,
+                  Collections.<SubmoduleConfig>emptyList(),
+                  false,
+                  false,
+                  new DefaultBuildChooser(),
+                  null,
+                  null,
+                  false,
+                  "repo0",
+                  null,
+                  null,
+                  null,
+                  null,
+                  false,
+                  false,
+                  false,
+                  false,
+                  null,
+                  null,
+                  false,
+                  null,
+                  false, false, false, "");
+
+        SCM repo1Scm = new GitSCM("repo1",
+                  repo1.remoteConfigs(),
+                  branch,
+                  null,
+                  false,
+                  Collections.<SubmoduleConfig>emptyList(),
+                  false,
+                  false,
+                  new DefaultBuildChooser(),
+                  null,
+                  null,
+                  false,
+                  "repo1",
+                  null,
+                  null,
+                  null,
+                  null,
+                  false,
+                  false,
+                  false,
+                  false,
+                  null,
+                  null,
+                  false,
+                  null,
+                  false, false, false, "");
+
+        List<SCM> testScms = new ArrayList<SCM>();
+        testScms.add(repo0Scm);
+        testScms.add(repo1Scm);
+
+        MultiSCM scm = new MultiSCM(testScms);
+
+        project.setScm(scm);
+        project.getBuildersList().add(new CaptureEnvironmentBuilder());
+        return project;
+    }
+
+    private FreeStyleBuild build(final FreeStyleProject project,
+            final Result expectedResult) throws Exception {
+        final FreeStyleBuild build = project.scheduleBuild2(0, new Cause.UserCause()).get();
+        if(expectedResult != null) {
+            assertBuildStatus(expectedResult, build);
+        }
+        return build;
+    }
 }

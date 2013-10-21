@@ -109,7 +109,7 @@ public class GitPublisherTest extends AbstractGitTestCase {
                 false, Collections.<SubmoduleConfig>emptyList(), false,
                 false, new DefaultBuildChooser(), null, null, true, null, null,
                 null, null, "integration", false, false, false, false, null, null, false,
-                null, false, false, false));
+                null, false, false, false, ""));
 
         project.getPublishersList().add(new GitPublisher(
                 Collections.<TagToPush>emptyList(),
@@ -150,7 +150,7 @@ public class GitPublisherTest extends AbstractGitTestCase {
           false, Collections.<SubmoduleConfig>emptyList(), false,
           false, new DefaultBuildChooser(), null, null, true, null, null,
           null, null, "integration", false, false, false, false, null, null, skipTag,
-          null, false, false, false));
+          null, false, false, false, ""));
 
       project.getPublishersList().add(new GitPublisher(
           Collections.<TagToPush>emptyList(),

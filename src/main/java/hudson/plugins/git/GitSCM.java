@@ -101,6 +101,7 @@ public class GitSCM extends SCM implements Serializable {
     private boolean ignoreNotifyCommit;
     private boolean useShallowClone;
     private boolean abortIfNoNewRevs;
+    private int cutoffHours;
 
     /**
      * @deprecated
@@ -153,7 +154,7 @@ public class GitSCM extends SCM implements Serializable {
                 false, Collections.<SubmoduleConfig>emptyList(), false,
                 false, new DefaultBuildChooser(), null, null, false, null,
                 null,
-                null, null, null, false, false, false, false, null, null, false, null, false, false, false);
+                null, null, null, false, false, false, false, null, null, false, null, false, false, false, "");
     }
 
     @DataBoundConstructor
@@ -184,7 +185,8 @@ public class GitSCM extends SCM implements Serializable {
             String includedRegions,
             boolean ignoreNotifyCommit,
             boolean useShallowClone,
-            boolean abortIfNoNewRevs) {
+            boolean abortIfNoNewRevs,
+            String cutoffHours) {
 
         this.scmName = scmName;
 
@@ -234,6 +236,7 @@ public class GitSCM extends SCM implements Serializable {
         this.ignoreNotifyCommit = ignoreNotifyCommit;
         this.useShallowClone = useShallowClone;
         this.abortIfNoNewRevs = abortIfNoNewRevs;
+        this.cutoffHours = this.parseCutoffHours(cutoffHours);
         if (remotePoll
             && (branches.size() != 1
             || branches.get(0).getName().contains("*")
@@ -513,6 +516,12 @@ public class GitSCM extends SCM implements Serializable {
     public boolean getAbortIfNoNewRevs() {
         return abortIfNoNewRevs;
     }
+    
+    public int getCutoffHours() {
+        // Ignore commits made this many hours before the current time.
+        // Defaults to -1, meaning no cutoff.
+        return cutoffHours;
+    }
 
     public BuildChooser getBuildChooser() {
         return buildChooser;
@@ -731,7 +740,7 @@ public class GitSCM extends SCM implements Serializable {
                     listener.getLogger().println("Polling for changes in");
 
                     Collection<Revision> origCandidates = buildChooser.getCandidateRevisions(
-                            true, singleBranch, git, listener, buildData, context);
+                            true, singleBranch, cutoffHours, git, listener, buildData, context);
 
                     List<Revision> candidates = new ArrayList<Revision>();
 
@@ -1062,7 +1071,7 @@ public class GitSCM extends SCM implements Serializable {
                 }
 
                 return buildChooser.getCandidateRevisions(
-                        false, singleBranch, git, listener, buildData, context);
+                        false, singleBranch, cutoffHours, git, listener, buildData, context);
 
             }
         });
@@ -1898,6 +1907,15 @@ public class GitSCM extends SCM implements Serializable {
         return false;
     }
 
+    private int parseCutoffHours(String cutoffHours) {
+        if (cutoffHours == null) return -1;
+        try {
+            double val = Double.parseDouble(cutoffHours);
+            return (int)val;
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
 
     @Initializer(after=PLUGINS_STARTED)
     public static void onLoaded() {

@@ -1,4 +1,5 @@
 package hudson.plugins.git;
+import hudson.plugins.git.util.BuildChooser;
 
 import hudson.EnvVars;
 import hudson.FilePath;
@@ -18,6 +19,7 @@ import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 import org.jvnet.hudson.test.CaptureEnvironmentBuilder;
 import org.jvnet.hudson.test.HudsonTestCase;
+
 
 
 /**
@@ -106,6 +108,20 @@ public abstract class AbstractGitTestCase extends HudsonTestCase {
                             includedRegions);
     }
 
+    protected FreeStyleProject setupProject(String branchString, String cutoffHours, BuildChooser chooser) throws Exception {
+        FreeStyleProject project = createFreeStyleProject();
+        project.setScm(new GitSCM(
+            null, createRemoteRepositories(), Collections.singletonList(new BranchSpec(branchString)),
+            null, false, Collections.<SubmoduleConfig>emptyList(), false,
+            false, chooser, null, null, false, null, null,
+            null, null, null, false, false, false, false, null, null, false,
+            null, false, false, false,
+            cutoffHours
+        ));
+        project.getBuildersList().add(new CaptureEnvironmentBuilder());
+        return project;
+    }
+
     protected FreeStyleProject setupProject(List<BranchSpec> branches, boolean authorOrCommitter,
                                           String relativeTargetDir, String excludedRegions,
                                           String excludedUsers, String localBranch, boolean fastRemotePoll,
@@ -119,7 +135,7 @@ public abstract class AbstractGitTestCase extends HudsonTestCase {
                 false, Collections.<SubmoduleConfig>emptyList(), false,
                 false, new DefaultBuildChooser(), null, null, authorOrCommitter, relativeTargetDir, null,
                 excludedRegions, excludedUsers, localBranch, false, false, false, fastRemotePoll, null, null, false,
-                includedRegions, false, false, false));
+                includedRegions, false, false, false, ""));
         project.getBuildersList().add(new CaptureEnvironmentBuilder());
         return project;
     }

@@ -36,7 +36,7 @@ public class InverseBuildChooser extends BuildChooser {
 
     @Override
     public Collection<Revision> getCandidateRevisions(boolean isPollCall,
-            String singleBranch, GitClient git, TaskListener listener,
+            String singleBranch, int cutoffHours, GitClient git, TaskListener listener,
             BuildData buildData, BuildChooserContext context) throws GitException, IOException {
 
         GitUtils utils = new GitUtils(listener, git);
@@ -66,6 +66,10 @@ public class InverseBuildChooser extends BuildChooser {
                 i.remove();
             }
         }
+
+        // Filter out old branch revisions
+        // If cutoffHours is negative, no revisions will be excluded.
+        branchRevs = utils.filterOldBranches(branchRevs, cutoffHours);
 
         // Filter out branch revisions that aren't leaves
         branchRevs = utils.filterTipBranches(branchRevs);

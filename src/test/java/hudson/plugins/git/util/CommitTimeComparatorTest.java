@@ -49,4 +49,30 @@ public class CommitTimeComparatorTest extends AbstractGitTestCase {
                 assertEquals("branch"+j, branches.get(revs.get(j)).getName());
         }
     }
+
+    public void testWithinCutoff() throws Exception {
+
+        CommitTimeComparator comp = new CommitTimeComparator(git.getRepository());
+
+        // Recent commit should be within the 1 hour cutoff
+        commit("file", johnDoe, "Commit message");
+        for (Branch b: git.getBranches()) {
+            Revision rev = new Revision(b.getSHA1());
+            assertTrue(comp.isWithinCutoff(rev, 1));
+        }
+    }
+
+    public void testAfterCutoff() throws Exception {
+
+        CommitTimeComparator comp = new CommitTimeComparator(git.getRepository());
+
+        // Set the cutoff to 0 hours, so every commit
+        // should be after the cutoff.
+        commit("file2", johnDoe, "Commit message");
+
+        for (Branch b: git.getBranches()) {
+            Revision rev = new Revision(b.getSHA1());
+            assertFalse(comp.isWithinCutoff(rev, 0));
+        }
+    }
 }

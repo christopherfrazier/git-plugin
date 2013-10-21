@@ -60,4 +60,36 @@ public class CommitTimeComparator implements Comparator<Revision> {
         if (lhs>rhs)    return 1;
         return 0;
     }
+
+    /**
+     * Returns a boolean indicating whether the revision was
+     * committed within the specified number of hours.
+     * If we cannot parse the commit time, return False.
+     */
+    public boolean isWithinCutoff(Revision rev, int cutoffHours) {
+
+        // Invariant: cutoffHours should be non-negative
+        // (cutoff of zero indicates that every commit
+        // should be excluded; useful for testing).
+        assert cutoffHours >= 0;
+
+        long currentTime = System.currentTimeMillis();
+        long cutoffMilliseconds = cutoffHours * 3600000;
+
+        try {
+            // Convert the commit time (in seconds) to milliseconds
+            long commitTime = (long)time(rev) * 1000;
+
+            // Check whether the commit time is after the cutoff
+            // Note that if the commit time is in the future
+            // (which should never happen) this will always return true.
+            return (currentTime - commitTime) < cutoffMilliseconds;
+
+        } catch (RuntimeException e) {
+
+            // If we can't parse the commit time, assume that it is
+            // NOT within the cutoff.
+            return false;
+        }
+    }
 }
