@@ -748,7 +748,7 @@ public class GitSCMTest extends AbstractGitTestCase {
                 false, Collections.<SubmoduleConfig>emptyList(), false,
                 false, new DefaultBuildChooser(), null, null, true, null, null,
                 null, null, null, false, false, false, false, null, null, false,
-                null, false, false));
+                null, false, false, false));
 
         // create initial commit and then run the build against it:
         final String commitFile1 = "commitFile1";
@@ -778,7 +778,7 @@ public class GitSCMTest extends AbstractGitTestCase {
                 false, Collections.<SubmoduleConfig>emptyList(), false,
                 false, new DefaultBuildChooser(), null, null, true, null, null,
                 null, null, null, false, false, false, false, null, null, false,
-                null, false, false));
+                null, false, false, false));
 
         // create initial commit and then run the build against it:
         commit("commitFileBase", johnDoe, "Initial Commit");
@@ -818,7 +818,7 @@ public class GitSCMTest extends AbstractGitTestCase {
                 false, Collections.<SubmoduleConfig>emptyList(), false,
                 false, new DefaultBuildChooser(), null, null, true, null, null,
                 null, null, null, false, false, false, false, null, null, false,
-                null, false, false));
+                null, false, false, false));
 
         // create initial commit and then run the build against it:
         commit("commitFileBase", johnDoe, "Initial Commit");
@@ -857,7 +857,7 @@ public class GitSCMTest extends AbstractGitTestCase {
                 false, Collections.<SubmoduleConfig>emptyList(), false,
                 false, new DefaultBuildChooser(), null, null, true, null, null,
                 null, null, null, false, false, false, false, null, null, false,
-                null, false, false));
+                null, false, false, false));
 
         // create initial commit and then run the build against it:
         commit("commitFileBase", johnDoe, "Initial Commit");
@@ -895,7 +895,7 @@ public class GitSCMTest extends AbstractGitTestCase {
                 false, Collections.<SubmoduleConfig>emptyList(), false,
                 false, new DefaultBuildChooser(), null, null, true, null, null,
                 null, null, null, false, false, false, false, null, null, false,
-                null, false, false));
+                null, false, false, false));
 
         // create initial commit and then run the build against it:
         commit("commitFileBase", johnDoe, "Initial Commit");
