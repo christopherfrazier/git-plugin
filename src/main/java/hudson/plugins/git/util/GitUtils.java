@@ -159,6 +159,41 @@ public class GitUtils {
         return l;
     }
 
+
+    /**
+     * Return a list of branches within the specified cutoff time.
+     *
+     * @param revisions List of revisions to filter
+     * @param cutoffHours Ignore revisions older than this many hours in the past.  Negative value indicates no cutoff.
+     * @return List of revisions, with old revisions removed.
+     */
+    public List<Revision> filterOldBranches(Collection<Revision> revisions, int cutoffHours) {
+
+        List<Revision> filteredRevs = new ArrayList<Revision>();
+
+        // If cutoffHours is negative, allow all revisions (no cutoff)
+        if (cutoffHours < 0) { 
+            filteredRevs.addAll(revisions);
+            return filteredRevs;
+        }
+
+        // Use the same comparator because it will cache revisions,
+        // avoiding the need to re-parse the commit time.
+        CommitTimeComparator timeComp = new CommitTimeComparator(git.getRepository());
+
+        for (Iterator<Revision> i = revisions.iterator(); i.hasNext(); ) {
+            Revision rev = i.next();
+
+            // Add the revision to the filtered list only if
+            // it is within the cutoff.
+            if (timeComp.isWithinCutoff(rev, cutoffHours)) {
+                filteredRevs.add(rev);
+            }
+        }
+
+        return filteredRevs;
+    }
+
     public static EnvVars getPollEnvironment(AbstractProject p, FilePath ws, Launcher launcher, TaskListener listener)
         throws IOException, InterruptedException {
         return getPollEnvironment(p, ws, launcher, listener, true);

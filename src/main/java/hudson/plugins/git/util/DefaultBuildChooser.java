@@ -34,7 +34,7 @@ public class DefaultBuildChooser extends BuildChooser {
      * @throws GitException
      */
     @Override
-    public Collection<Revision> getCandidateRevisions(boolean isPollCall, String singleBranch,
+    public Collection<Revision> getCandidateRevisions(boolean isPollCall, String singleBranch, int cutoffHours,
                                                       GitClient git, TaskListener listener, BuildData data, BuildChooserContext context)
         throws GitException, IOException {
 
@@ -43,7 +43,7 @@ public class DefaultBuildChooser extends BuildChooser {
         // if the branch name contains more wildcards then the simple usecase
         // does not apply and we need to skip to the advanced usecase
         if (singleBranch == null || singleBranch.contains("*"))
-            return getAdvancedCandidateRevisions(isPollCall,listener,new GitUtils(listener,git),data);
+            return getAdvancedCandidateRevisions(isPollCall, cutoffHours, listener, new GitUtils(listener, git), data);
 
         // check if we're trying to build a specific commit
         // this only makes sense for a build, there is no
@@ -151,10 +151,11 @@ public class DefaultBuildChooser extends BuildChooser {
      *  1. Find all the branch revisions
      *  2. Filter out branches that we don't care about from the revisions.
      *     Any Revisions with no interesting branches are dropped.
-     *  3. Get rid of any revisions that are wholly subsumed by another
+     *  3. Remove revisions before the cutoff.
+     *  4. Get rid of any revisions that are wholly subsumed by another
      *     revision we're considering.
-     *  4. Get rid of any revisions that we've already built.
-     *  5. Sort revisions from old to new.
+     *  5. Get rid of any revisions that we've already built.
+     *  6. Sort revisions from old to new.
      *
      *  NB: Alternate BuildChooser implementations are possible - this
      *  may be beneficial if "only 1" branch is to be built, as much of
@@ -162,7 +163,10 @@ public class DefaultBuildChooser extends BuildChooser {
      * @throws IOException
      * @throws GitException
      */
-    private List<Revision> getAdvancedCandidateRevisions(boolean isPollCall, TaskListener listener, GitUtils utils, BuildData data) throws GitException, IOException {
+    private List<Revision> getAdvancedCandidateRevisions(
+        boolean isPollCall, int cutoffHours, TaskListener listener,
+        GitUtils utils, BuildData data
+    ) throws GitException, IOException {
         // 1. Get all the (branch) revisions that exist
         List<Revision> revs = new ArrayList<Revision>(utils.getAllBranchRevisions());
         verbose(listener, "Starting with all the branches: {0}", revs);
@@ -197,11 +201,16 @@ public class DefaultBuildChooser extends BuildChooser {
 
         verbose(listener, "After branch filtering: {0}", revs);
 
-        // 3. We only want 'tip' revisions
+        // 3. Filter out old branch revisions
+        // If cutoffHours is negative, no revisions will be excluded.
+        revs = utils.filterOldBranches(revs, cutoffHours);
+
+        // 4. We only want 'tip' revisions
         revs = utils.filterTipBranches(revs);
         verbose(listener, "After non-tip filtering: {0}", revs);
 
-        // 4. Finally, remove any revisions that have already been built.
+
+        // 5. Finally, remove any revisions that have already been built.
         verbose(listener, "Removing what''s already been built: {0}", data.getBuildsByBranchName());
         for (Iterator<Revision> i = revs.iterator(); i.hasNext();) {
             Revision r = i.next();
@@ -219,7 +228,7 @@ public class DefaultBuildChooser extends BuildChooser {
             return Collections.singletonList(data.getLastBuiltRevision());
         }
 
-        // 5. sort them by the date of commit, old to new
+        // 6. sort them by the date of commit, old to new
         // this ensures the fairness in scheduling.
         Repository repository = utils.git.getRepository();
         try {

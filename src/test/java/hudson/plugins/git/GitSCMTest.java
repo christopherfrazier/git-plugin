@@ -29,6 +29,7 @@ import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.slaves.EnvironmentVariablesNodeProperty.Entry;
 import hudson.plugins.git.GitSCM.DescriptorImpl;
 import hudson.plugins.git.util.DefaultBuildChooser;
+import hudson.plugins.git.util.InverseBuildChooser;
 import hudson.util.IOException2;
 
 import com.google.common.base.Function;
@@ -106,6 +107,96 @@ public class GitSCMTest extends AbstractGitTestCase {
         assertFalse("scm polling should not detect any more changes after build", project.poll(listener).hasChanges());
     }
 
+    public void testIgnoreOldCommitDefaultChooser() throws Exception {
+        // Create project with a 0 hour cutoff
+        FreeStyleProject project = setupProject("origin/test/*", "0", new DefaultBuildChooser());
+
+        // Normalize SCM polling
+        normalizePolling(project, "test/test-branch");
+
+        // Initial commit on this branch
+        commit("commitFile", johnDoe, "Test commit");
+
+        // Should not detect any changes because the commit
+        // is before the 0 hour cutoff.
+        assertFalse(
+            "SCM polling should not detect commits before the cutoff",
+            project.poll(listener).hasChanges()
+        );
+    }
+
+    public void testIgnoreOldCommitInverseChooser() throws Exception {
+        // Create project with a 1 hour cutoff
+        FreeStyleProject project = setupProject("origin/master", "0", new InverseBuildChooser());
+
+        // Normalize SCM polling
+        normalizePolling(project, "test/test-branch");
+
+        // Initial commit on this branch
+        commit("commitFile", johnDoe, "Test commit");
+
+        // Should not detect any changes because the commit
+        // is before the 0 hour cutoff.
+        assertFalse(
+            "SCM polling should not detect commits before the cutoff",
+            project.poll(listener).hasChanges()
+        );
+    }
+
+    public void testBuildNewCommitDefaultChooser() throws Exception {
+        // Create project with a 1 hour cutoff
+        FreeStyleProject project = setupProject("origin/test/*", "1", new DefaultBuildChooser());
+
+        // Normalize SCM polling
+        normalizePolling(project, "test/test-branch");
+
+        // Initial commit on this branch
+        commit("commitFile", johnDoe, "Test commit");
+
+        // Should detect the change because it's within the 1 hour cutoff
+        assertTrue(project.poll(listener).hasChanges());
+    }
+
+    public void testBuildNewCommitInverseChooser() throws Exception {
+        // Create project with a 1 hour cutoff
+        FreeStyleProject project = setupProject("origin/master", "1", new InverseBuildChooser());
+
+        // Normalize SCM polling
+        normalizePolling(project, "test/test-branch");
+
+        // Initial commit on this branch
+        commit("commitFile", johnDoe, "Test commit");
+
+        // Should detect the change because it's within the 1 hour cutoff
+        assertTrue(project.poll(listener).hasChanges());
+    }
+
+    public void testNoCommitCutoffDefaultChooser() throws Exception {
+        FreeStyleProject project = setupProject("origin/test/*", "", new DefaultBuildChooser());
+
+        // Normalize SCM polling
+        normalizePolling(project, "test/test-branch");
+
+        // Initial commit on this branch
+        commit("commitFile", johnDoe, "Test commit");
+
+        // Since we haven't set a cutoff, this change should get picked up
+        assertTrue(project.poll(listener).hasChanges());
+    }
+
+    public void testNoCommitCutoffInverseChooser() throws Exception {
+        FreeStyleProject project = setupProject("origin/master", "", new InverseBuildChooser());
+
+        // Normalize SCM polling
+        normalizePolling(project, "test/test-branch");
+
+        // Initial commit on this branch
+        commit("commitFile", johnDoe, "Test commit");
+
+        // Since we haven't set a cutoff, this change should get picked up
+        assertTrue(project.poll(listener).hasChanges());
+    }
+
     public void testBasicIncludedRegion() throws Exception {
         FreeStyleProject project = setupProject("master", false, null, null, null, ".*3");
 
@@ -128,7 +219,7 @@ public class GitSCMTest extends AbstractGitTestCase {
         final FreeStyleBuild build2 = build(project, Result.SUCCESS, commitFile2, commitFile3);
         final Set<User> culprits = build2.getCulprits();
         assertEquals("The build should have two culprit", 2, culprits.size());
-        
+
         PersonIdent[] expected = {johnDoe, janeDoe};
         assertCulprits("jane doe and john doe should be the culprits", culprits, expected);
 
@@ -137,7 +228,7 @@ public class GitSCMTest extends AbstractGitTestCase {
         assertBuildStatusSuccess(build2);
         assertFalse("scm polling should not detect any more changes after build", project.poll(listener).hasChanges());
     }
-    
+
     public void testIncludedRegionWithDeeperCommits() throws Exception {
         FreeStyleProject project = setupProject("master", false, null, null, null, ".*3");
 
@@ -151,11 +242,11 @@ public class GitSCMTest extends AbstractGitTestCase {
         final String commitFile2 = "commitFile2";
         commit(commitFile2, janeDoe, "Commit number 2");
         assertFalse("scm polling detected commit2 change, which should not have been included", project.poll(listener).hasChanges());
-        
+
 
         final String commitFile3 = "commitFile3";
         commit(commitFile3, johnDoe, "Commit number 3");
-        
+
         final String commitFile4 = "commitFile4";
         commit(commitFile4, janeDoe, "Commit number 4");
         assertTrue("scm polling did not detect commit3 change", project.poll(listener).hasChanges());
@@ -164,7 +255,7 @@ public class GitSCMTest extends AbstractGitTestCase {
         final FreeStyleBuild build2 = build(project, Result.SUCCESS, commitFile2, commitFile3);
         final Set<User> culprits = build2.getCulprits();
         assertEquals("The build should have two culprit", 2, culprits.size());
-        
+
         PersonIdent[] expected = {johnDoe, janeDoe};
         assertCulprits("jane doe and john doe should be the culprits", culprits, expected);
 
@@ -748,7 +839,7 @@ public class GitSCMTest extends AbstractGitTestCase {
                 false, Collections.<SubmoduleConfig>emptyList(), false,
                 false, new DefaultBuildChooser(), null, null, true, null, null,
                 null, null, null, false, false, false, false, null, null, false,
-                null, false, false, false));
+                null, false, false, false, ""));
 
         // create initial commit and then run the build against it:
         final String commitFile1 = "commitFile1";
@@ -778,7 +869,7 @@ public class GitSCMTest extends AbstractGitTestCase {
                 false, Collections.<SubmoduleConfig>emptyList(), false,
                 false, new DefaultBuildChooser(), null, null, true, null, null,
                 null, null, null, false, false, false, false, null, null, false,
-                null, false, false, false));
+                null, false, false, false, ""));
 
         // create initial commit and then run the build against it:
         commit("commitFileBase", johnDoe, "Initial Commit");
@@ -818,7 +909,7 @@ public class GitSCMTest extends AbstractGitTestCase {
                 false, Collections.<SubmoduleConfig>emptyList(), false,
                 false, new DefaultBuildChooser(), null, null, true, null, null,
                 null, null, null, false, false, false, false, null, null, false,
-                null, false, false, false));
+                null, false, false, false, ""));
 
         // create initial commit and then run the build against it:
         commit("commitFileBase", johnDoe, "Initial Commit");
@@ -857,7 +948,7 @@ public class GitSCMTest extends AbstractGitTestCase {
                 false, Collections.<SubmoduleConfig>emptyList(), false,
                 false, new DefaultBuildChooser(), null, null, true, null, null,
                 null, null, null, false, false, false, false, null, null, false,
-                null, false, false, false));
+                null, false, false, false, ""));
 
         // create initial commit and then run the build against it:
         commit("commitFileBase", johnDoe, "Initial Commit");
@@ -895,7 +986,7 @@ public class GitSCMTest extends AbstractGitTestCase {
                 false, Collections.<SubmoduleConfig>emptyList(), false,
                 false, new DefaultBuildChooser(), null, null, true, null, null,
                 null, null, null, false, false, false, false, null, null, false,
-                null, false, false, false));
+                null, false, false, false, ""));
 
         // create initial commit and then run the build against it:
         commit("commitFileBase", johnDoe, "Initial Commit");
@@ -948,4 +1039,30 @@ public class GitSCMTest extends AbstractGitTestCase {
             envs.put("CAT","");
         }
     }
+
+    /**
+     * Ensure that polling returns no changes for the given
+     * project and branch name. Also checks out the branch.
+     */
+    private void normalizePolling(FreeStyleProject project, String branchName) throws Exception {
+
+        // Commit to HEAD (origin/master)
+        commit("Initial", johnDoe, "Test");
+
+        // Checkout a new branch, starting from the last commit
+        git.checkout(Constants.HEAD, branchName);
+
+        // Build the project.  We ignore any errors, which
+        // may occur if we don't have any candidate commits
+        // to build.
+        FreeStyleBuild build = project.scheduleBuild2(0, new Cause.UserCause()).get();
+        System.out.println(build.getLog());
+
+        assertFalse(
+            "SCM polling should not detect any changes before running",
+            project.poll(listener).hasChanges()
+        );
+    }
+
+
 }

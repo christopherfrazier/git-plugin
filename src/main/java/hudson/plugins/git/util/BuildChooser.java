@@ -51,6 +51,8 @@ public abstract class BuildChooser implements ExtensionPoint, Describable<BuildC
      *        this will be non-null only in the simple case, in advanced
      *        cases with multiple repositories and/or branches specified
      *        then this value will be null.
+     * @param cutoffHours Ignore commits older than this number of hours.  Use -1
+     *        to disable the cutoff.
      * @param context
      *      Object that provides access back to the model object. This is because
      *      the build chooser can be invoked on a slave where there's no direct access
@@ -65,7 +67,7 @@ public abstract class BuildChooser implements ExtensionPoint, Describable<BuildC
      * @throws IOException
      * @throws GitException
      */
-    public Collection<Revision> getCandidateRevisions(boolean isPollCall, String singleBranch,
+    public Collection<Revision> getCandidateRevisions(boolean isPollCall, String singleBranch, int cutoffHours,
                                                       GitClient git, TaskListener listener, BuildData buildData, BuildChooserContext context) throws GitException, IOException, InterruptedException {
         // fallback to the previous signature
         return getCandidateRevisions(isPollCall, singleBranch, (IGitAPI) git, listener, buildData, context);
@@ -78,7 +80,7 @@ public abstract class BuildChooser implements ExtensionPoint, Describable<BuildC
     public Collection<Revision> getCandidateRevisions(boolean isPollCall, String singleBranch,
                                IGitAPI git, TaskListener listener, BuildData buildData, BuildChooserContext context) throws GitException, IOException, InterruptedException {
         // fallback to the previous signature
-        return getCandidateRevisions(isPollCall,singleBranch,git,listener,buildData);
+        return getCandidateRevisions(isPollCall, singleBranch, git, listener, buildData);
     }
 
 
