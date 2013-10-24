@@ -101,7 +101,7 @@ public class GitSCM extends SCM implements Serializable {
     private boolean ignoreNotifyCommit;
     private boolean useShallowClone;
     private boolean abortIfNoNewRevs;
-    private int cutoffHours;
+    private String cutoffHours;
 
     /**
      * @deprecated
@@ -236,7 +236,7 @@ public class GitSCM extends SCM implements Serializable {
         this.ignoreNotifyCommit = ignoreNotifyCommit;
         this.useShallowClone = useShallowClone;
         this.abortIfNoNewRevs = abortIfNoNewRevs;
-        this.cutoffHours = this.parseCutoffHours(cutoffHours);
+        this.cutoffHours = cutoffHours;
         if (remotePoll
             && (branches.size() != 1
             || branches.get(0).getName().contains("*")
@@ -517,7 +517,7 @@ public class GitSCM extends SCM implements Serializable {
         return abortIfNoNewRevs;
     }
     
-    public int getCutoffHours() {
+    public String getCutoffHours() {
         // Ignore commits made this many hours before the current time.
         // Defaults to -1, meaning no cutoff.
         return cutoffHours;
@@ -716,6 +716,7 @@ public class GitSCM extends SCM implements Serializable {
         final List<RemoteConfig> paramRepos = getParamExpandedRepos(lastBuild);
 //        final String singleBranch = getSingleBranch(lastBuild);
         final BuildChooserContext context = new BuildChooserContextImpl(project,null);
+        final int cutoffHoursInt = this.parseCutoffHours(cutoffHours);
 
         boolean pollChangesResult = workingDirectory.act(new FileCallable<Boolean>() {
 
@@ -740,7 +741,7 @@ public class GitSCM extends SCM implements Serializable {
                     listener.getLogger().println("Polling for changes in");
 
                     Collection<Revision> origCandidates = buildChooser.getCandidateRevisions(
-                            true, singleBranch, cutoffHours, git, listener, buildData, context);
+                            true, singleBranch, cutoffHoursInt, git, listener, buildData, context);
 
                     List<Revision> candidates = new ArrayList<Revision>();
 
@@ -960,6 +961,7 @@ public class GitSCM extends SCM implements Serializable {
         //		useShallowClone = false;
         //	}
         }
+        final int cutoffHoursInt = this.parseCutoffHours(cutoffHours);
 
         Collection<Revision> candidates = workingDirectory.act(new FileCallable<Collection<Revision>>() {
 
@@ -1071,8 +1073,7 @@ public class GitSCM extends SCM implements Serializable {
                 }
 
                 return buildChooser.getCandidateRevisions(
-                        false, singleBranch, cutoffHours, git, listener, buildData, context);
-
+                        false, singleBranch, cutoffHoursInt, git, listener, buildData, context);
             }
         });
 
